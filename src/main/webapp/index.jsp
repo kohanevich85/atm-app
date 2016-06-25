@@ -4,7 +4,7 @@
 </head>
 <body>
 <h2></h2>
-<a href="/atm/withdraw">Withdraw</a>
-<a href="/atm/deposit">Deposit</a>
+<a href="withdraw">Withdraw</a>
+<a href="deposit">Deposit</a>
 </body>
 </html>

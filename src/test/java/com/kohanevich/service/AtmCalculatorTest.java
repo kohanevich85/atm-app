@@ -1,69 +1,57 @@
 package com.kohanevich.service;
 
-import com.google.common.collect.ImmutableMap;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import static com.google.common.collect.ImmutableMap.builder;
-import static org.junit.Assert.*;
+import static com.google.common.collect.ImmutableMap.of;
+import static com.google.common.collect.Maps.newHashMap;
+import static com.kohanevich.service.Status.*;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(DataProviderRunner.class)
 public class AtmCalculatorTest {
 
-    private AtmCalculator calculator;
-
-    @Before
-    public void init() {
-        Map<Integer, Integer> initAtm = new HashMap<>();
-        initAtm.put(20, 20);  // 1520 - 3*500 - 1*20 - 4
-        initAtm.put(50, 20);
-        initAtm.put(100, 20);
-        initAtm.put(200, 20);
-        initAtm.put(500, 20);
-        calculator = new AtmCalculator(initAtm);
-    }
+    private AtmCalculator calculator = new AtmCalculator();
 
     @DataProvider
-    public static Object[][] data() {
+    public static Object[][] withdrawDataProvider() {
         return new Object[][] {
-            {500, builder().put(20, 20).put(50, 20).put(100, 20).put(200, 20).put(500, 19).build()},
-            {300, builder().put(20, 20).put(50, 20).put(100, 19).put(200, 19).put(500, 20).build()},
-            {250, builder().put(20, 20).put(50, 19).put(100, 20).put(200, 19).put(500, 20).build()},
-        };
-    }
-
-    @DataProvider
-    public static Object[][] dataErrorCase() {
-        return new Object[][] {
-                {-5, 20},
-                {0, 20},
-                {5, 20},
-                {30, 20},
-                {25, 20},
-                {310, 300},
-                {310, 300},
-                {9999, 5000},
+            {500, EMPTY_ATM, prepareEmptyAtm(), prepareEmptyAtm()},
+            {500, AVAILABLE, newHashMap(prepareFullAtm()), of(20, 20, 50, 20, 100, 20, 200, 20, 500, 19)},
+            {300, AVAILABLE, newHashMap(prepareFullAtm()), of(20, 20, 50, 20, 100, 19, 200, 19, 500, 20)},
+            {250, AVAILABLE, newHashMap(prepareFullAtm()), of(20, 20, 50, 19, 100, 20, 200, 19, 500, 20)},
+            {-5, build(AVAILABLE_ONLY, 20), prepareFullAtm(), prepareFullAtm()},
+            {0, build(AVAILABLE_ONLY, 20), prepareFullAtm(), prepareFullAtm()},
+            {5, build(AVAILABLE_ONLY, 20), prepareFullAtm(), prepareFullAtm()},
+            {30, build(AVAILABLE_ONLY, 20), prepareFullAtm(), prepareFullAtm()},
+            {25, build(AVAILABLE_ONLY, 20), prepareFullAtm(), prepareFullAtm()},
+            {310, build(AVAILABLE_ONLY, 300), prepareFullAtm(), prepareFullAtm()},
+            {9999, build(AVAILABLE_ONLY, 5000), prepareFullAtm(), prepareFullAtm()},
+            {250, AVAILABLE, newHashMap(of(20, 20, 50, 10, 100, 0, 200, 0, 500, 20)),
+                        of(20, 20, 50, 5, 100, 0, 200, 0, 500, 20)},
+            {300, build(AVAILABLE_ONLY, 200), newHashMap(of(20, 15, 50, 0, 100, 0, 200, 0, 500, 0)),
+                    of(20, 15, 50, 0, 100, 0, 200, 0, 500, 0)},
         };
     }
 
     @Test
-    @UseDataProvider("data")
-    public void testWithdraw(int withdrawAmount, Map<Integer, Integer> expectedAtm) {
-        calculator.withdraw(withdrawAmount);
+    @UseDataProvider("withdrawDataProvider")
+    public void testWithdraw(int withdrawAmount, Status expectedStatus, Map<Integer, Integer> initAtm, Map<Integer, Integer> expectedAtm) {
+        calculator.setAtm(initAtm);
+        assertEquals(expectedStatus, calculator.withdraw(withdrawAmount));
         assertEquals(expectedAtm, calculator.getAtm());
     }
 
-    @Test
-    @UseDataProvider("dataErrorCase")
-    public void testWithdrawRestrictedAmount(int withdrawAmount, int allowedAmount) {
-        Status withdraw = calculator.withdraw(withdrawAmount);
-        assertEquals(allowedAmount, withdraw.amount);
+    private static Map<Integer, Integer> prepareEmptyAtm() {
+       return of(20, 0, 50, 0, 100, 0, 200, 0, 500, 0);
+    }
+
+    private static Map<Integer, Integer> prepareFullAtm() {
+        return of(20, 20, 50, 20, 100, 20, 200, 20, 500, 20);
     }
 }
